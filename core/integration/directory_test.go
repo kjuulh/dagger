@@ -516,7 +516,29 @@ func TestDirectoryDiff(t *testing.T) {
 	t.Parallel()
 
 	aID := newDirWithFile(t, "a-file", "a-content")
-	bID := newDirWithFile(t, "b-file", "b-content")
+
+  var bHostDirRes struct  {
+    Directory struct {
+      File struct {
+        ID core.DirectoryID
+      }
+    }
+  }
+
+  err := testutil.Query(`
+    query TestFileFromHost($path: String!) {
+      host {
+        directory(path: $path) {
+          id
+        }
+      }
+    }
+    `, &bHostDirRes, &testutil.QueryOptions{Variables: map[string]any {
+      "path": "testdata",
+    }})
+  require.NoError(t, err)
+
+  bID := bHostDirRes.Directory.File.ID
 
 	var res struct {
 		Directory struct {
@@ -533,7 +555,7 @@ func TestDirectoryDiff(t *testing.T) {
 				}
 			}
 		}`
-	err := testutil.Query(diff, &res, &testutil.QueryOptions{
+	err = testutil.Query(diff, &res, &testutil.QueryOptions{
 		Variables: map[string]any{
 			"id":    aID,
 			"other": bID,
