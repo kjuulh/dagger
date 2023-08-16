@@ -40,7 +40,7 @@ impl Into<DirectoryId> for &str {
 
 impl From<DirectoryId> for String {
     fn from(value: DirectoryId) -> Self {
-        value.0.clone()
+        format!("\"{}\"", value.0.clone())
     }
 }
 
