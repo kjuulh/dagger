@@ -37,6 +37,13 @@ impl Into<DirectoryId> for &str {
         DirectoryId(self.to_string())
     }
 }
+
+impl From<DirectoryId> for String {
+    fn from(value: DirectoryId) -> Self {
+        value.0.clone()
+    }
+}
+
 impl Into<DirectoryId> for String {
     fn into(self) -> DirectoryId {
         DirectoryId(self.clone())
@@ -803,10 +810,16 @@ impl Container {
     /// * `path` - Location of the written directory (e.g., "/tmp/directory").
     /// * `directory` - Identifier of the directory to write
     /// * `opt` - optional argument, see inner type for documentation, use <func>_opts to use
-    pub fn with_directory(&self, path: impl Into<String>, directory: DirectoryId) -> Container {
+    pub fn with_directory(&self, path: impl Into<String>, directory: Directory) -> Container {
         let mut query = self.selection.select("withDirectory");
         query = query.arg("path", path.into());
-        query = query.arg("directory", directory);
+        query = query.arg_lazy(
+            "directory",
+            Box::new(move || {
+                let directory = directory.clone();
+                Box::pin(async move { directory.id().await.unwrap().into() })
+            }),
+        );
         return Container {
             proc: self.proc.clone(),
             selection: query,

@@ -104,6 +104,27 @@ impl Selection {
         s
     }
 
+    pub fn arg_lazy(
+        &self,
+        name: &str,
+        value: Box<dyn Fn() -> Pin<Box<dyn Future<Output = String>>>>,
+    ) -> Selection {
+        let mut s = self.clone();
+
+        match s.args.as_mut() {
+            Some(args) => {
+                let _ = args.insert(name.to_string(), LazyResolve::new(Box::new(value)));
+            }
+            None => {
+                let mut hm = HashMap::new();
+                let _ = hm.insert(name.to_string(), LazyResolve::new(Box::new(value)));
+                s.args = Some(hm);
+            }
+        }
+
+        s
+    }
+
     pub fn arg_enum<S>(&self, name: &str, value: S) -> Selection
     where
         S: Serialize,
@@ -136,7 +157,7 @@ impl Selection {
                     let mut actualargs = Vec::new();
                     for (name, arg) in args {
                         let arg = arg().await;
-                        actualargs.push(format!("{name}:{arg}"));
+                        actualargs.push(format!("{name}: {arg}"));
                     }
 
                     query = query.add(&format!("({})", actualargs.join(", ")));

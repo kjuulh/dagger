@@ -34,7 +34,7 @@ async fn main() -> eyre::Result<()> {
     let ref_ = client
         .container()
         .from("nginx")
-        .with_directory("/usr/share/nginx/html", build_dir.id().await?)
+        .with_directory("/usr/share/nginx/html", build_dir)
         .publish(format!("ttl.sh/hello-dagger-sdk-{}:1h", rng.gen::<u64>()))
         .await?;
 
