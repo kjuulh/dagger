@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.3.2 (2023-11-22)
+## v0.3.3 (2023-11-22)
 
 ### Commit Statistics
 
@@ -26,6 +26,8 @@ and this project adheres to
  * **Uncategorized**
     - Add thiserror instead of exposing eyre anonymous errors ([`3a9abb9`](https://github.com/kjuulh/dagger/commit/3a9abb97c21fdd59755b12e679a9864c2c4ecdc7))
 </details>
+
+## v0.3.2 (2023-11-22)
 
 ## v0.2.22 (2023-04-30)
 
