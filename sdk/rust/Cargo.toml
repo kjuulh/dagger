@@ -1,9 +1,5 @@
 [workspace]
-members = [
-  "crates/dagger-codegen",
-  "crates/dagger-sdk",
-  "crates/dagger-bootstrap",
-]
+members = ["crates/*"]
 resolver = "2"
 
 [workspace.package]

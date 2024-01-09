@@ -40,6 +40,5 @@ rand.workspace = true
 tracing-test.workspace = true
 
 [features]
-
 default = ["gen"]
 gen = []
