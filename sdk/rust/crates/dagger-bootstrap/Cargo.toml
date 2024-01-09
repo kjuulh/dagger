@@ -8,11 +8,11 @@ license-file.workspace = true
 authors.workspace = true 
 repository.workspace = true 
 publish = true
+readme = "README.md"
+license-file = "LICENSE"
 
 version.workspace = true
 edition.workspace = true
-readme.workspace = true
-license-file.workspace = true
 authors.workspace = true
 repository.workspace = true
 
