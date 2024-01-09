@@ -9,6 +9,13 @@ authors.workspace = true
 repository.workspace = true 
 publish = true
 
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+license-file.workspace = true
+authors.workspace = true
+repository.workspace = true
+
 [dependencies]
 eyre = { workspace = true }
 tokio = { workspace = true }
