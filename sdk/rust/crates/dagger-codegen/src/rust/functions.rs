@@ -47,19 +47,7 @@ pub fn format_function(funcs: &CommonFunctions, field: &FullTypeFields) -> Optio
         pub $(is_async) fn $(field.name.pipe(|n | format_struct_name(n)))
     };
 
-    let lifecycle = format_optional_args(funcs, field)
-        .pipe(|(_, contains_lifecycle)| contains_lifecycle)
-        .and_then(|c| {
-            if *c {
-                Some(quote! {
-                    <'a>
-                })
-            } else {
-                None
-            }
-        });
-
-    let args = format_function_args(funcs, field, lifecycle.as_ref());
+    let args = format_function_args(funcs, field);
 
     let output_type = field
         .type_
@@ -83,7 +71,7 @@ pub fn format_function(funcs: &CommonFunctions, field: &FullTypeFields) -> Optio
 
             $(field.description.pipe(|d| format_struct_comment(d)))
             $(&desc)
-            $(&signature)_opts$(lifecycle)(
+            $(&signature)_opts(
                 $args
             ) -> $(output_type) {
                 let mut query = self.selection.select($(quoted(field.name.as_ref())));
@@ -301,7 +289,6 @@ fn render_execution(funcs: &CommonFunctions, field: &FullTypeFields) -> rust::To
 fn format_function_args(
     funcs: &CommonFunctions,
     field: &FullTypeFields,
-    lifecycle: Option<&rust::Tokens>,
 ) -> Option<(rust::Tokens, rust::Tokens, bool)> {
     let mut argument_description = Vec::new();
     if let Some(args) = field.args.as_ref() {
@@ -358,7 +345,7 @@ fn format_function_args(
             Some((
                 quote! {
                     $(required_args)
-                    opts: $(field_name)$(lifecycle)
+                    opts: $(field_name)
                 },
                 description,
                 true,
