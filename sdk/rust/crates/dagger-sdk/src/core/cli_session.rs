@@ -1,4 +1,4 @@
-use std::{fs::canonicalize, path::PathBuf, process::Stdio, sync::Arc};
+use std::{fs::canonicalize, path::Path, process::Stdio, sync::Arc};
 
 use tokio::io::AsyncBufReadExt;
 
@@ -7,6 +7,12 @@ use crate::core::{config::Config, connect_params::ConnectParams};
 #[derive(Clone, Debug)]
 pub struct CliSession {
     inner: Arc<InnerCliSession>,
+}
+
+impl Default for CliSession {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CliSession {
@@ -19,9 +25,33 @@ impl CliSession {
     pub async fn connect(
         &self,
         config: &Config,
-        cli_path: &PathBuf,
-    ) -> eyre::Result<(ConnectParams, tokio::process::Child)> {
+        cli_path: &Path,
+    ) -> eyre::Result<(ConnectParams, DaggerSessionProc)> {
         self.inner.connect(config, cli_path).await
+    }
+}
+
+pub struct DaggerSessionProc {
+    inner: tokio::process::Child,
+}
+
+impl Drop for DaggerSessionProc {
+    fn drop(&mut self) {
+        futures::executor::block_on(async move {
+            tracing::trace!("waiting for dagger subprocess to shutdown");
+
+            if let Err(e) = self.inner.wait().await {
+                tracing::warn!("failed to shutdown session: {}", e);
+            }
+
+            tracing::trace!("dagger subprocess shutdown");
+        })
+    }
+}
+
+impl From<tokio::process::Child> for DaggerSessionProc {
+    fn from(value: tokio::process::Child) -> Self {
+        Self { inner: value }
     }
 }
 
@@ -32,14 +62,15 @@ impl InnerCliSession {
     pub async fn connect(
         &self,
         config: &Config,
-        cli_path: &PathBuf,
-    ) -> eyre::Result<(ConnectParams, tokio::process::Child)> {
+        cli_path: &Path,
+    ) -> eyre::Result<(ConnectParams, DaggerSessionProc)> {
         let proc = self.start(config, cli_path)?;
         let params = self.get_conn(proc, config).await?;
+
         Ok(params)
     }
 
-    fn start(&self, config: &Config, cli_path: &PathBuf) -> eyre::Result<tokio::process::Child> {
+    fn start(&self, config: &Config, cli_path: &Path) -> eyre::Result<tokio::process::Child> {
         let mut args: Vec<String> = vec!["session".into()];
         if let Some(workspace) = &config.workdir_path {
             let abs_path = canonicalize(workspace)?;
@@ -53,7 +84,7 @@ impl InnerCliSession {
         args.extend(["--label".into(), "dagger.io/sdk.name:rust".into()]);
         args.extend([
             "--label".into(),
-            format!("dagger.io/sdk.version:{}", env!("CARGO_PKG_VERSION")).into(),
+            format!("dagger.io/sdk.version:{}", env!("CARGO_PKG_VERSION")),
         ]);
 
         let proc = tokio::process::Command::new(
@@ -69,14 +100,14 @@ impl InnerCliSession {
 
         //TODO: Add retry mechanism
 
-        return Ok(proc);
+        Ok(proc)
     }
 
     async fn get_conn(
         &self,
         mut proc: tokio::process::Child,
         config: &Config,
-    ) -> eyre::Result<(ConnectParams, tokio::process::Child)> {
+    ) -> eyre::Result<(ConnectParams, DaggerSessionProc)> {
         let stdout = proc
             .stdout
             .take()
@@ -118,6 +149,6 @@ impl InnerCliSession {
             "could not receive ok signal from dagger-engine"
         ))?;
 
-        Ok((conn, proc))
+        Ok((conn, proc.into()))
     }
 }

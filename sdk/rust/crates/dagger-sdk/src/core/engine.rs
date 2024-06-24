@@ -4,6 +4,8 @@ use crate::core::{
 };
 use std::path::PathBuf;
 
+use super::cli_session::DaggerSessionProc;
+
 pub struct Engine {}
 
 impl Engine {
@@ -11,7 +13,7 @@ impl Engine {
         Self {}
     }
 
-    async fn from_cli(&self, cfg: &Config) -> eyre::Result<(ConnectParams, tokio::process::Child)> {
+    async fn from_cli(&self, cfg: &Config) -> eyre::Result<(ConnectParams, DaggerSessionProc)> {
         let cli = Downloader::new(DAGGER_ENGINE_VERSION.into())
             .get_cli()
             .await?;
@@ -24,7 +26,7 @@ impl Engine {
     pub async fn start(
         &self,
         cfg: &Config,
-    ) -> eyre::Result<(ConnectParams, Option<tokio::process::Child>)> {
+    ) -> eyre::Result<(ConnectParams, Option<DaggerSessionProc>)> {
         tracing::info!("starting dagger-engine");
 
         if let Ok(conn) = self.from_session_env().await {
@@ -32,7 +34,7 @@ impl Engine {
         }
 
         if let Some((conn, child)) = self.from_local_cli(cfg).await.ok() {
-            return Ok((conn, Some(child)));
+            return Ok((conn, Some(child.into())));
         }
 
         let (conn, proc) = self.from_cli(cfg).await?;
@@ -53,7 +55,7 @@ impl Engine {
     async fn from_local_cli(
         &self,
         cfg: &Config,
-    ) -> eyre::Result<(ConnectParams, tokio::process::Child)> {
+    ) -> eyre::Result<(ConnectParams, DaggerSessionProc)> {
         let bin: PathBuf = std::env::var("_EXPERIMENTAL_DAGGER_CLI_BIN")?.into();
         let cli_session = CliSession::new();
         Ok(cli_session.connect(cfg, &bin).await?)
